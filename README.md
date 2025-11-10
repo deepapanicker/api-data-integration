@@ -11,6 +11,7 @@ A Python framework for integrating with REST APIs to extract, transform, and loa
 - **Data Validation**: Validate API responses before processing
 - **Incremental Loading**: Support for incremental data extraction
 - **Multiple Formats**: Support for JSON, XML, and CSV responses
+- **Pagination Support**: Automatic handling of paginated APIs
 
 ## 📋 Prerequisites
 
@@ -59,11 +60,14 @@ api-data-integration/
 │       ├── rate_limiter.py
 │       └── error_handler.py
 ├── config/                # Configuration files
-│   └── api_config.yaml
+│   └── api_config.yaml.example
 ├── examples/              # Example scripts
 │   ├── basic_extraction.py
-│   └── incremental_sync.py
+│   ├── incremental_sync.py
+│   └── oauth_example.py
 ├── tests/                 # Unit tests
+├── ARCHITECTURE.md        # Architecture diagram and flow
+├── requirements.txt
 └── README.md
 ```
 
@@ -106,6 +110,21 @@ extractor = IncrementalExtractor(
 new_data = extractor.extract_incremental()
 ```
 
+### OAuth2 Authentication
+
+```python
+from src.clients.oauth_client import OAuthClient
+
+client = OAuthClient(
+    base_url='https://api.example.com',
+    client_id='your-client-id',
+    client_secret='your-client-secret',
+    token_url='https://api.example.com/oauth/token'
+)
+
+data = client.get('/protected-endpoint')
+```
+
 ## 🔧 Configuration
 
 ### API Configuration
@@ -129,19 +148,46 @@ apis:
 
 ## 📊 Usage Examples
 
-### OAuth2 Authentication
+### Complete ETL Pipeline
 
 ```python
-from src.clients.oauth_client import OAuthClient
+from src.clients.rest_client import RESTClient
+from src.extractors.api_extractor import APIExtractor
+from src.transformers.response_transformer import ResponseTransformer
+from src.loaders.database_loader import DatabaseLoader
 
-client = OAuthClient(
-    base_url='https://api.example.com',
-    client_id='your-client-id',
-    client_secret='your-client-secret',
-    token_url='https://api.example.com/oauth/token'
+# 1. Extract
+client = RESTClient(base_url='https://api.example.com', api_key='key')
+extractor = APIExtractor(client)
+raw_data = extractor.extract('/customers', pagination=True)
+
+# 2. Transform
+transformer = ResponseTransformer()
+transformed_data = transformer.transform(
+    raw_data,
+    field_mapping={'customer_id': 'id', 'customer_name': 'name'}
 )
 
-data = client.get('/protected-endpoint')
+# 3. Load
+loader = DatabaseLoader(connection_string='postgresql://...')
+result = loader.load(
+    data=transformed_data,
+    table_name='customers',
+    load_mode='upsert',
+    unique_key='id'
+)
+```
+
+### Rate Limiting
+
+```python
+from src.utils.rate_limiter import RateLimiter
+
+rate_limiter = RateLimiter(requests_per_second=10)
+
+for endpoint in endpoints:
+    rate_limiter.wait_if_needed()  # Respect rate limits
+    data = extractor.extract(endpoint)
 ```
 
 ### Error Handling
@@ -149,12 +195,33 @@ data = client.get('/protected-endpoint')
 ```python
 from src.utils.error_handler import ErrorHandler
 
-handler = ErrorHandler()
+error_handler = ErrorHandler(log_file='errors.log')
 
 try:
     data = extractor.extract('/endpoint')
 except Exception as e:
-    handler.handle_error(e, context={'endpoint': '/endpoint'})
+    error_info = error_handler.handle_error(e, context={'endpoint': '/endpoint'})
+    # Error logged and tracked
+```
+
+## 🏗️ Architecture
+
+- **Architecture Details**: See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture diagrams and data flow
+- **Visual Diagrams**: See [DIAGRAM.md](DIAGRAM.md) for comprehensive visual diagrams showing system components and data flow
+
+## 📝 Examples
+
+### Run Examples
+
+```bash
+# Basic extraction
+python examples/basic_extraction.py
+
+# Incremental sync
+python examples/incremental_sync.py
+
+# OAuth2 example
+python examples/oauth_example.py
 ```
 
 ## 🧪 Testing
@@ -162,6 +229,28 @@ except Exception as e:
 ```bash
 pytest tests/
 ```
+
+## 📚 Documentation
+
+- **Architecture**: See [ARCHITECTURE.md](ARCHITECTURE.md) for system design
+- **Examples**: See `examples/` directory for usage examples
+- **API Reference**: See docstrings in source files
+
+## 🔒 Security Best Practices
+
+- Store API keys in environment variables
+- Use OAuth2 for production APIs
+- Implement proper error handling
+- Log sensitive operations appropriately
+- Use HTTPS for all API communications
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
 
 ## 📝 License
 
@@ -173,4 +262,3 @@ MIT License
 
 - GitHub: [@deepapanicker](https://github.com/deepapanicker)
 - Portfolio: [deepapanicker.com](https://deepapanicker.com)
-

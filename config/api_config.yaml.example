@@ -1,0 +1,65 @@
+# API Configuration Example
+# Copy this file to api_config.yaml and fill in your values
+
+apis:
+  example_api:
+    base_url: https://api.example.com
+    authentication:
+      type: api_key  # api_key, oauth2, basic
+      header: X-API-Key
+      value: ${API_KEY}  # Use environment variable
+    
+    rate_limit:
+      requests_per_second: 10
+      requests_per_minute: 600
+    
+    retry:
+      max_retries: 3
+      backoff_factor: 2
+    
+    endpoints:
+      customers: /api/v1/customers
+      orders: /api/v1/orders
+      products: /api/v1/products
+  
+  oauth_api:
+    base_url: https://api.oauth-example.com
+    authentication:
+      type: oauth2
+      client_id: ${OAUTH_CLIENT_ID}
+      client_secret: ${OAUTH_CLIENT_SECRET}
+      token_url: https://api.oauth-example.com/oauth/token
+      scope:
+        - read
+        - write
+    
+    rate_limit:
+      requests_per_second: 5
+    
+    endpoints:
+      data: /api/v1/data
+
+extraction:
+  default_pagination: true
+  page_size: 100
+  timestamp_field: updated_at
+
+transformation:
+  field_mappings:
+    # Map API fields to target fields
+    # api_field: target_field
+    customer_id: id
+    customer_name: name
+    customer_email: email
+
+loading:
+  database:
+    connection_string: ${DATABASE_URL}
+    default_table: api_data
+    load_mode: upsert  # append, replace, upsert
+    unique_key: id
+
+logging:
+  level: INFO
+  file: logs/api_integration.log
+
