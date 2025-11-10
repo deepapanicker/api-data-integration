@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+env/
+
+# Configuration
+.env
+config/api_config.yaml
+
+# Data
+*.csv
+*.json
+!examples/*.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
